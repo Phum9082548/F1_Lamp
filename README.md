@@ -1,101 +1,129 @@
-# F1 Lamp · Real 3D + Wi-Fi control
+# F1 Lamp · Real 3D + Wi-Fi & Cloud Relay Control
 
-## Internet control
+[![Cloudflare Pages](https://img.shields.io/badge/Frontend-Cloudflare%20Pages-orange?logo=cloudflare)](https://f1-lamp.pages.dev)
+[![Cloudflare Workers](https://img.shields.io/badge/Backend-Cloudflare%20Workers-f38020?logo=cloudflare)](https://f1-lamp-relay.f1-lamp-control.workers.dev)
+[![ESP8266](https://img.shields.io/badge/Hardware-ESP8266%20NodeMCU-blue)](https://www.espressif.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE-three.txt)
 
-Handshake fix: do not append CRLF to the end of `setExtraHeaders` content.
-WebSockets 2.6.1 appends CRLF itself before writing User-Agent. An extra blank
-line caused User-Agent to be interpreted as a WebSocket frame (RSV 2/3 error).
-`node test_handshake.cjs` checks the exact installed-library header layout.
+โคมไฟ LED โลโก้ Formula 1 (F1) ควบคุมด้วยไมโครคอนโทรลเลอร์ **ESP8266** รองรับการสั่งงานแบบ Real-time ทั้งผ่าน **Wi-Fi ภายในบ้าน (mDNS: `f1-lamp.local`)** และ **ผ่านอินเทอร์เน็ตนอกบ้าน 4G/5G (Cloud Relay บน Cloudflare Workers + MongoDB)** พร้อมหน้าเว็บ Web App สไตล์ F1 Pit Wall ที่มี **3D Simulator (Three.js)** จำลองไฟบนโมเดล 3MF จริง (23,506 สามเหลี่ยม)
 
-The private hosted Site now includes an authenticated Cloudflare Worker relay
-with D1 command/report storage. Owner browsers sign in using the existing Site
-access policy. The ESP makes an outbound TLS-verified WebSocket connection; no
-router forwarding or inbound Internet exposure is needed. Local Wi-Fi control
-and ArduinoOTA remain available.
+---
 
-Install ArduinoJson 7 and WebSockets by Markus Sattler, as well as Adafruit
-NeoPixel. Compile-tested with the installed ESP8266 core 3.1.2. Flash use is
-about 87% of the 1 MB sketch budget; use the 4 MB flash / 2 MB FS OTA layout.
+## 🌟 จุดเด่นของระบบ (Key Features)
 
-Pair once at home: upload the firmware, open the private hosted Site, and use
-Copy pairing code. Open the ESP's HTTP IP on home Wi-Fi, paste the code into
-the pairing field and save. The device stores it in LittleFS. The firmware ZIP
-does not contain the relay's service/device credentials. After pairing, use the
-same private hosted URL from mobile data or another Wi-Fi network.
+* **สถาปัตยกรรมแยกส่วนชัดเจน (Clean Architecture):** แยกเด็ดขาดระหว่าง **Hardware (เฟิร์มแวร์ C++)** และ **Software (Frontend + Backend บน Cloudflare)**
+* **เว็บแอปพลิเคชันออนไลน์ระดับโลก:** โฮสต์บน **Cloudflare Pages** ที่ [https://f1-lamp.pages.dev](https://f1-lamp.pages.dev) เร็วระดับมิลลิวินาที ไม่มีการหลับ (No Cold Start)
+* **ควบคุมนอกบ้านไม่ต้อง Forward Port:** เชื่อมต่อผ่าน Outbound TLS WebSocket (`wss://`) เข้าหา Cloudflare Worker Relay ปลอดภัยสูงด้วย Root CA ในตัว
+* **ค้นหาโคมไฟอัตโนมัติ (mDNS):** ไม่ต้องจำเลข IP เข้าผ่านชื่อ `http://f1-lamp.local` ในบ้านได้ทันที พร้อมปุ่มสแกนหาโคมไฟจากหน้าเว็บ
+* **ระบบจำลอง 3D เสมือนจริง:** แสดงผลชิ้นงานจริง 8 ชิ้นส่วน 23,506 สามเหลี่ยม หมุน ซูม แยกชิ้นส่วน (Exploded View) และคำนวณแสงไฟบนเว็บตรงกับฮาร์ดแวร์จริง 1:1
+* **รองรับ Database ถาวร:** มีโมดูลเชื่อมต่อกับ **MongoDB Atlas** บันทึกสถานะไฟล่าสุดและสูตรไฟโปรด (Presets)
+* **UI Minimalist & ใช้งานง่าย:** ดีไซน์สไตล์ F1 Telemetry ตัดไอคอนรกตา/อีโมจิออกทั้งหมด เน้นความคลีน ปุ่มลัดปรับความสว่างและความเร็วได้ในคลิกเดียว
 
-The code includes the current verified public TLS root. NTP sets the clock for
-certificate validation. There is no insecure TLS fallback. The Site's service
-and device keys are stored as secret runtime variables, never in client bundles.
-Pairing codes must be kept private. Re-pair if access keys are changed.
+---
 
-Online state is based on device heartbeats. Commands are marked pending until
-the ESP acknowledges them. Offline commands are rejected; unacknowledged commands
-expire after 30 seconds and are not replayed on a later boot. A persistent
-WebSocket avoids a TLS handshake for every command. Reconnection can briefly
-pause rendering on the ESP8266 while its TLS stack connects.
+## 📁 โครงสร้างโฟลเดอร์ (Project Structure)
 
-Tests: `node test_relay.mjs` (Node 24 SQLite) and `node test_effects.cjs`.
-Build Worker: `python build_worker.py`. Hosting manifest retains the existing
-private Site ID, uses the `DB` D1 binding, and migrations live under `drizzle/`.
+```text
+F1_Lamp/
+├── hardware/                    # ══════ ฝั่งฮาร์ดแวร์ & เฟิร์มแวร์ ESP8266 ══════
+│   ├── README.md                # รายละเอียดการต่อสายไฟและสเปกพิน
+│   └── F1_Lamp/
+│       ├── F1_Lamp.ino          # โค้ดหลัก Arduino IDE (Clean code พร้อมคอมเมนต์ครบ)
+│       ├── effects.h            # สูตรคณิตศาสตร์แสงไฟ 10 โหมด
+│       ├── cloud.h              # ไคลเอนต์ Secure WebSocket เชื่อม Cloudflare Worker
+│       ├── config.example.h     # เทมเพลตสำหรับใส่ชื่อ Wi-Fi & รหัส OTA
+│       ├── relay_ca.h           # ใบรับรอง Root CA (TLS X.509)
+│       └── web_assets.h         # เว็บและโมเดล 3D สำรองแบบ Gzip ใน Flash Memory
+│
+├── software/                    # ══════ ฝั่งซอฟต์แวร์ คลาวด์ และเว็บแอป ══════
+│   ├── frontend/                # [Cloudflare Pages] Web App + 3D Simulator
+│   │   ├── index.html           # หน้าเว็บหลัก สไตล์มินิมอล คลีน ไม่มีอีโมจิ
+│   │   ├── css/style.css        # ดีไซน์ F1 Pit Wall Telemetry Theme
+│   │   └── js/
+│   │       ├── app.js           # ระบบควบคุม State, ซิงก์เน็ต และสแกน mDNS
+│   │       ├── effects.js       # โมดูลสูตรแสงไฟ 10 โหมด (ตรงกับ C++ 1:1)
+│   │       ├── viewer.js        # Three.js WebGL Renderer & Diffuser Custom Shader
+│   │       └── model.json       # พิกัด 3D Mesh จริง (23,506 Triangles)
+│   │
+│   └── backend/                 # [Cloudflare Workers + MongoDB]
+│       ├── wrangler.toml        # คอนฟิกการ Deploy Cloudflare Worker
+│       ├── package.json         # ไลบรารี Wrangler & TypeScript
+│       └── src/
+│           ├── index.ts         # WebSocket Relay (`/api/device/ws`) & REST API
+│           └── mongodb.ts       # โมดูลบันทึก State & Presets ลง MongoDB Atlas
+│
+├── .gitignore                   # ป้องกันการ Push ข้อมูลลับ (config.h, node_modules)
+├── README.md                    # คู่มือภาพรวมโปรเจกต์
+└── วิธีใช้.txt                  # ขั้นตอนการติดตั้งและใช้งานฉบับย่อภาษาไทย
+```
 
-Uses the real vertices and triangles from `F1_Logo_Led_Lamp.3mf`: 8 meshes,
-11,753 vertices, 23,506 triangles. The source contains separate parts arranged
-for printing, so presentation assembly transforms are applied. Mesh topology is
-preserved. The physical LED path and channel placement are illustrative.
+---
 
-## Firmware
+## 🔌 วงจรและการต่อขาฮาร์ดแวร์ (Hardware & Pinout)
 
-Open `F1_Lamp/F1_Lamp.ino` in Arduino IDE. Install the ESP8266 board package
-and Adafruit NeoPixel. Copy `config.example.h` to `config.h` and fill in local
-Wi-Fi (2.4 GHz) and OTA credentials. `config.h` is excluded from the repository.
+* **บอร์ดควบคุม:** ESP8266 (NodeMCU 1.0 / ESP-12E), Flash 4MB (ตั้งค่า FS 2MB / OTA)
+* **ไฟ LED:** ไฟเส้น WS2812B แสงสีแดง (Signature Red) ทั้งหมด 19 ดวง:
+  * **โซน 1 (D1 / GPIO 5):** 4 ดวง (แถบโลโก้ด้านหน้า)
+  * **โซน 2 (D2 / GPIO 4):** 6 ดวง (แถบกลาง)
+  * **โซน 3 (D5 / GPIO 14):** 9 ดวง (ฐานล่าง)
+* **ไฟเลี้ยง:** แนะนำใช้แหล่งจ่ายไฟ 5V นิ่งๆ (กระแสอย่างน้อย 2A) ต่อกราวด์ร่วม (Common Ground) ระหว่างบอร์ดและไฟเส้น
 
-Tested compilation: ESP8266 core 3.1.2, Adafruit NeoPixel 1.15.4,
-NodeMCU 1.0 / ESP-12E, 4 MB flash, FS 2 MB / OTA ~1019 KB.
-Firmware size with Internet support: about 945 KB. Actual hardware operation has not been tested.
+---
 
-Pins: D1 / GPIO5 = 4 LEDs, D2 / GPIO4 = 6 LEDs, D5 / GPIO14 = 9 LEDs.
-Use a stable 5 V supply for the board's appropriate 5 V input and the WS2812B
-strips, with a common ground. The earlier ~3.8 V supply needs resolving.
+## 💡 โหมดแสงไฟ 10 รูปแบบ (Lighting Effects)
 
-Upload via the existing OTA network port using the password currently in the
-board; use USB if authentication fails. This firmware retains ArduinoOTA.
-The entire website, model, and renderer are gzipped into `web_assets.h` in
-program flash. No LittleFS tool or separate filesystem upload is required.
-After boot, open the IP printed at 115200 baud, such as
-`http://192.168.1.104/`, from a computer or phone on the same LAN.
-IP addresses can change after reboot.
+ทุกโหมดมีการเปลี่ยนผ่านด้วย **Quintic Smootherstep 700ms** นุ่มนวล ไม่กระตุก:
 
-The device serves GET and same-origin POST `/api/state`, validates all fields,
-and returns its confirmed state. The UI reads the board before controlling it,
-coalesces slider changes, serializes writes, and reports failed requests.
-Controls are LAN-local; no router port forwarding is needed. HTTP control is
-intended for a trusted home LAN. POST requests from other origins are rejected.
-Settings are held in RAM on the ESP; reboot restores the startup defaults.
+| ลำดับ | ชื่อภาษาไทย | ชื่อโหมด (ID) | คำอธิบายลักษณะแสง |
+| :---: | :--- | :--- | :--- |
+| 1 | **เร่งเครื่อง** | `rev` | สตาร์ทเครื่องยนต์ D2 และ D5 เร่งขึ้นพร้อมกัน D1 ตามหลัง 3 สเต็ป |
+| 2 | **ไฟค้าง** | `static` | แสงสีแดงสว่างนิ่งเต็มดวง |
+| 3 | **ดาวหาง** | `chase` | หางแสงดาวหางวิ่งวนรอบตัวโคมอย่างรวดเร็ว |
+| 4 | **หายใจ** | `breathe` | ไฟค่อยๆ วาบสว่างและหรี่ลงเป็นจังหวะนุ่มนวล |
+| 5 | **คลื่นแสง** | `wave` | คลื่นแสงวิ่งผ่านต่อเนื่องข้ามแต่ละโซน |
+| 6 | **สแกนไปกลับ** | `scanner` | ลำแสงสแกนกวาดไป-กลับสไตล์ Knight Rider |
+| 7 | **แผ่ออกจากกลาง** | `ripple` | คลื่นแสงกระจายตัวออกจากศูนย์กลางสู่ขอบนอก |
+| 8 | **หัวใจเต้น** | `heartbeat` | จังหวะกระพริบคู่คล้ายชีพจรหัวใจเต้น |
+| 9 | **ประกายไฟ** | `ember` | แสงระยิบระยับแบบสุ่มคล้ายสะเก็ดไฟในท่อไอเสีย |
+| 10 | **ไหลสลับโซน** | `cascade` | แสงไฟไหลสลับลำดับจากโซนสู่โซน |
 
-## Website
+---
 
-The private hosted HTTPS Site controls the paired lamp through the relay.
-The standalone HTML is a simulator. Neither silently attempts HTTP requests
-to private LAN addresses. Use the Open lamp button to navigate to the ESP's
-same-origin page for local control and first-time pairing.
+## 🚀 ขั้นตอนการติดตั้งและเริ่มต้นใช้งาน (Getting Started)
 
-Drag to rotate, wheel or pinch to zoom; reset, auto-rotate, and exploded view
-are available. Brightness, speed, channel toggles, and ten red-only effects update
-the real mesh visualization. Engine rev starts D2 and D5 together; D1 is delayed
-three steps. Rendering and firmware use matching per-pixel formulas generated
-by make_effects.py. All modes fade in; power, channel, brightness and mode
-changes use a 700 ms quintic crossfade. Speed changes preserve effect phase.
-Static assets are streamed in 1 KB chunks while rendering continues.
-API version 3 is required; upload the new firmware before using these controls.
+### 1. ฝั่ง Hardware (ESP8266)
+1. เปิดโปรแกรม Arduino IDE
+2. ติดตั้งไลบรารีผ่าน Library Manager:
+   * `Adafruit NeoPixel`
+   * `ArduinoJson` (v7)
+   * `WebSockets by Markus Sattler`
+3. คัดลอก `hardware/F1_Lamp/config.example.h` เป็น `config.h` แล้วใส่ชื่อ Wi-Fi และรหัสผ่าน
+4. เปิดไฟล์ [hardware/F1_Lamp/F1_Lamp.ino](file:///c:/Users/user/Desktop/F1_Lamp/hardware/F1_Lamp/F1_Lamp.ino)
+5. เลือกบอร์ด **NodeMCU 1.0 (ESP-12E)** -> Flash: **4MB (FS: 2MB / OTA: ~1019KB)** แล้วกด **Upload**
 
-`dist/` is buildless. Serve with `python -m http.server --directory dist`.
-Three.js 0.170.0 is vendored locally with its MIT license. The optional web font
-uses Google Fonts; system font fallback works without Internet.
+### 2. ฝั่ง Software (Cloudflare Deploy)
+* **Backend (Workers):**
+  ```bash
+  cd software/backend
+  npm install
+  npx wrangler deploy
+  ```
+* **Frontend (Pages):**
+  ```bash
+  npx wrangler pages deploy software/frontend --project-name f1-lamp
+  ```
 
-To regenerate: `python convert_model.py <3mf-path>`, then `python embed_assets.py`.
-Do not rerun upgrade.py; it is the one-time migration from the original mockup.
+---
 
-References:
-- https://arduino-esp8266.readthedocs.io/en/latest/ota_updates/readme.html
-- https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer
-- https://threejs.org/docs/#examples/en/controls/OrbitControls
+## 📱 การควบคุมใช้งาน
+
+* **ควบคุมผ่านอินเทอร์เน็ต (4G/5G/ทุกที่ทั่วโลก):**
+  * เปิดเว็บ: **[https://f1-lamp.pages.dev](https://f1-lamp.pages.dev)**
+* **ควบคุมตรงในบ้านผ่าน Wi-Fi (ไม่ต้องพึ่งเน็ต):**
+  * เปิดเบราว์เซอร์เข้า: **`http://f1-lamp.local/`** (หรือกดปุ่มสแกนบนหน้าเว็บ)
+
+---
+
+## 📄 License
+* 3D Mesh Assets: Based on `F1_Logo_Led_Lamp.3mf`
+* Libraries: Three.js (MIT), Adafruit NeoPixel (LGPL), ArduinoJson (MIT), WebSockets (LGPL)
