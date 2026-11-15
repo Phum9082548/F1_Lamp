@@ -5,7 +5,7 @@
  * Features:
  * - Direct Cloudflare Worker API sync
  * - Local Wi-Fi mDNS scanner (f1-lamp.local)
- * - Clean, minimalistic UI with zero emojis
+ * - Clean, minimalistic UI with zero emojis (100% English)
  */
 
 'use strict';
@@ -48,7 +48,7 @@ function isValidState(v) {
 // Local cache
 let state = { ...defaults, zones: [...defaults.zones] };
 try {
-  const saved = JSON.parse(localStorage.getItem('f1-pit-v4'));
+  const saved = JSON.parse(localStorage.getItem('f1-pit-v5'));
   if (isValidState(saved)) state = saved;
 } catch {}
 
@@ -87,10 +87,10 @@ if (zonesContainer) {
       (n, i) =>
         `<div class="zone-box">
           <div class="zone-header">
-            <span class="zone-name">${['D1 (โลโก้หน้า)', 'D2 (แถบกลาง)', 'D5 (ฐานล่าง)'][i]}</span>
+            <span class="zone-name">${['D1 (Front Accent)', 'D2 (Center Stripe)', 'D5 (Base Plate)'][i]}</span>
             <button class="zone-toggle" data-zone="${i}">ON</button>
           </div>
-          <div class="zone-desc">${n} ดวง</div>
+          <div class="zone-desc">${n} LEDs</div>
           <div class="dots">${'<i class="dot"></i>'.repeat(n)}</div>
         </div>`
     )
@@ -113,7 +113,7 @@ function syncUI() {
 
   const powerBtn = $('#power');
   if (powerBtn) {
-    powerBtn.textContent = state.power ? 'เปิดไฟอยู่' : 'ปิดไฟอยู่';
+    powerBtn.textContent = state.power ? 'POWER ON' : 'POWER OFF';
     powerBtn.setAttribute('aria-pressed', String(state.power));
   }
 
@@ -133,7 +133,7 @@ function syncUI() {
   });
 
   try {
-    localStorage.setItem('f1-pit-v4', JSON.stringify(state));
+    localStorage.setItem('f1-pit-v5', JSON.stringify(state));
   } catch {}
 }
 
@@ -219,7 +219,7 @@ function edit(replay = false) {
   if (connected) {
     desiredVersion++;
     replayPending ||= replay;
-    setBanner('กำลังส่งคำสั่งไปที่โคม...');
+    setBanner('Sending command to lamp...');
     clearTimeout(sendTimer);
     sendTimer = setTimeout(sendStateToServer, 80);
   }
@@ -283,7 +283,7 @@ if ($('#replay')) {
   $('#replay').onclick = () => {
     state.power = true;
     edit(true);
-    setBanner('กำลังเล่น: ' + names[state.effect]);
+    setBanner('Replaying effect: ' + names[state.effect]);
   };
 }
 
@@ -331,17 +331,17 @@ async function checkStatus() {
     connected = isLocal || !!v.online;
 
     if (connected) {
-      setBadge('เชื่อมต่อแล้ว', 'connected');
-      setBanner(isLocal ? 'เชื่อมต่อโคมไฟในวง Wi-Fi เดียวกันโดยตรง' : 'โคมไฟออนไลน์ · ควบคุมผ่าน Cloud Relay');
+      setBadge('Connected', 'connected');
+      setBanner(isLocal ? 'Direct Local LAN connection active' : 'Lamp online · Synchronized via Cloudflare Relay');
     } else {
-      setBadge('โคมออฟไลน์', 'offline');
-      setBanner('โคมไฟออฟไลน์ · โหมดจำลอง 3D ทำงานปกติ');
+      setBadge('Offline', 'offline');
+      setBanner('Lamp is currently offline · 3D simulation mode active');
     }
     applyRemoteState(v);
   } catch (err) {
     connected = false;
-    setBadge('โหมดจำลอง', '');
-    setBanner('ยังไม่ได้เชื่อมต่อโคมไฟจริง · สามารถทดลองเล่นไฟบน 3D ได้');
+    setBadge('Simulation Mode', '');
+    setBanner('Hardware offline · Interactive 3D simulator active');
   }
 }
 
@@ -367,10 +367,10 @@ async function sendStateToServer() {
     appliedVersion = version;
     if (desiredVersion === version) {
       applyRemoteState(v);
-      setBanner('ส่งคำสั่งสำเร็จ');
+      setBanner('Command confirmed by relay');
     }
   } catch (err) {
-    setBanner('ส่งคำสั่งไม่สำเร็จ · ตรวจสอบอินเทอร์เน็ต');
+    setBanner('Network error · Could not deliver command');
   } finally {
     inFlight = false;
     if (desiredVersion !== appliedVersion) {
@@ -386,24 +386,20 @@ const scanBtn = $('#scanMdns');
 if (scanBtn) {
   scanBtn.onclick = async () => {
     scanBtn.disabled = true;
-    scanBtn.textContent = 'กำลังสแกนหา f1-lamp.local...';
-    setBanner('กำลังค้นหาโคมไฟผ่าน mDNS (f1-lamp.local)...');
+    scanBtn.textContent = 'Scanning for f1-lamp.local...';
+    setBanner('Searching for local hardware via mDNS (f1-lamp.local)...');
 
     try {
-      // In web browser on HTTPS, direct HTTP fetch may be blocked by mixed-content.
-      // We test local connectivity or redirect smoothly.
       const localUrl = 'http://f1-lamp.local';
-      
-      // Probe
       const img = new Image();
       let detected = false;
 
       const timer = setTimeout(() => {
         if (!detected) {
           scanBtn.disabled = false;
-          scanBtn.textContent = 'สแกนหาโคมไฟในวง Wi-Fi (f1-lamp.local)';
-          setBanner('หากอยู่ใน Wi-Fi เดียวกัน สามารถเปิดผ่าน http://f1-lamp.local ได้โดยตรง');
-          if (confirm('ต้องการเปิดหน้าควบคุมตรงผ่านเครือข่าย Wi-Fi ในบ้าน (http://f1-lamp.local) หรือไม่?')) {
+          scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
+          setBanner('If on the same Wi-Fi, open http://f1-lamp.local directly.');
+          if (confirm('Open direct local control page at http://f1-lamp.local?')) {
             window.open(localUrl, '_blank', 'noopener');
           }
         }
@@ -413,9 +409,9 @@ if (scanBtn) {
         detected = true;
         clearTimeout(timer);
         scanBtn.disabled = false;
-        scanBtn.textContent = 'สแกนหาโคมไฟในวง Wi-Fi (f1-lamp.local)';
-        setBanner('พบโคมไฟแล้วที่ f1-lamp.local!');
-        if (confirm('พบโคมไฟแล้ว! ต้องการเปิดหน้าควบคุมผ่าน http://f1-lamp.local หรือไม่?')) {
+        scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
+        setBanner('F1 Lamp discovered at f1-lamp.local!');
+        if (confirm('F1 Lamp discovered! Open direct control at http://f1-lamp.local?')) {
           window.open(localUrl, '_blank', 'noopener');
         }
       };
@@ -423,7 +419,7 @@ if (scanBtn) {
       img.src = `${localUrl}/api/state?_=${Date.now()}`;
     } catch (e) {
       scanBtn.disabled = false;
-      scanBtn.textContent = 'สแกนหาโคมไฟในวง Wi-Fi (f1-lamp.local)';
+      scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
     }
   };
 }

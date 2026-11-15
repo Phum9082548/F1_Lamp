@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,24 +21,24 @@
       <div class="brand-badge">F1</div>
       <div class="brand-title">PIT CONTROL</div>
     </div>
-    <div class="status-badge" id="connBadge">โหมดจำลอง</div>
+    <div class="status-badge" id="connBadge">Simulation Mode</div>
   </header>
 
   <main>
     <!-- Quick Action Bar -->
     <div class="quick-bar">
-      <button class="power-btn" id="power" aria-pressed="true">เปิดไฟอยู่</button>
-      <button class="scan-btn" id="scanMdns">สแกนหาโคมไฟในวง Wi-Fi (f1-lamp.local)</button>
+      <button class="power-btn" id="power" aria-pressed="true">POWER ON</button>
+      <button class="scan-btn" id="scanMdns">Scan Local Network (f1-lamp.local)</button>
     </div>
 
     <!-- Status Banner -->
     <div class="status-banner" id="statusBanner">
-      <span id="bannerText">พร้อมใช้งาน · กำลังเชื่อมต่อผ่านระบบ Cloud Relay</span>
+      <span id="bannerText">System Ready · Connected to Cloudflare Relay</span>
       <span id="pingText" style="font-size:11px; color:#8c8f96;"></span>
     </div>
 
     <div class="grid">
-      <!-- Left: 3D Preview & Zones -->
+      <!-- Left Column: 3D Preview & Zones -->
       <section>
         <div class="preview-panel">
           <div class="preview-header">
@@ -46,14 +46,14 @@
             <span>23,506 TRIANGLES</span>
           </div>
 
-          <div id="viewer" aria-label="โมเดล 3D โคม F1">
-            <div id="modelStatus" role="status">กำลังโหลดโมเดล 3D...</div>
+          <div id="viewer" aria-label="F1 Lamp 3D Model">
+            <div id="modelStatus" role="status">Loading 3D mesh model...</div>
           </div>
 
           <div class="view-tools">
-            <button class="tool-btn" id="resetView">รีเซ็ตมุมกล้อง</button>
-            <button class="tool-btn" id="autoRotate" aria-pressed="false">หมุนอัตโนมัติ</button>
-            <button class="tool-btn" id="explode" aria-pressed="false">แยกชิ้นส่วน</button>
+            <button class="tool-btn" id="resetView">Reset Camera</button>
+            <button class="tool-btn" id="autoRotate" aria-pressed="false">Auto Rotate</button>
+            <button class="tool-btn" id="explode" aria-pressed="false">Exploded View</button>
           </div>
 
           <div class="preview-footer">
@@ -73,19 +73,19 @@
         <!-- Zones Control -->
         <div class="card" style="margin-top: 20px;">
           <div class="card-title">
-            <h2>เปิด-ปิด แยกโซนไฟ</h2>
-            <span class="card-tag">ZONES</span>
+            <h2>Channel Output Control</h2>
+            <span class="card-tag">CHANNELS</span>
           </div>
           <div class="zones-grid" id="zones"></div>
         </div>
       </section>
 
-      <!-- Right: Main Controls -->
+      <!-- Right Column: Controls -->
       <aside>
         <!-- Brightness Card -->
         <div class="card">
           <div class="card-title">
-            <h2>ความสว่าง</h2>
+            <h2>Brightness</h2>
             <span class="card-tag" id="brightnessVal">40%</span>
           </div>
           <input type="range" id="brightness" min="0" max="100" value="40">
@@ -100,7 +100,7 @@
         <!-- Speed Card -->
         <div class="card">
           <div class="card-title">
-            <h2>ความเร็วเอฟเฟกต์</h2>
+            <h2>Animation Speed</h2>
             <span class="card-tag" id="speedVal">1.00x</span>
           </div>
           <input type="range" id="speed" min="25" max="250" value="100">
@@ -115,25 +115,25 @@
         <!-- Effects Grid Card -->
         <div class="card">
           <div class="card-title">
-            <h2>เลือกโหมดแสงไฟ</h2>
-            <span class="card-tag">EFFECTS</span>
+            <h2>Lighting Effects</h2>
+            <span class="card-tag">PRESETS</span>
           </div>
           <div class="effects-grid" id="effects"></div>
-          <button class="replay-btn" id="replay">เล่นเอฟเฟกต์นี้ซ้ำ</button>
+          <button class="replay-btn" id="replay">Replay Active Effect</button>
         </div>
 
         <!-- Connection Settings Card -->
         <div class="card">
           <div class="card-title">
-            <h2>การเชื่อมต่อ</h2>
-            <span class="card-tag">NETWORK</span>
+            <h2>Direct Connection</h2>
+            <span class="card-tag">LOCAL LAN</span>
           </div>
           <p style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
-            เชื่อมต่อผ่าน Cloud Relay หรือใส่ที่อยู่ IP/ชื่อเครื่องในวง Wi-Fi
+            Connect directly via home network IP address or local hostname.
           </p>
           <div class="input-row">
-            <input type="text" id="hostInput" placeholder="f1-lamp.local หรือ 192.168.1.xxx">
-            <button id="directConnectBtn">เชื่อมต่อ</button>
+            <input type="text" id="hostInput" placeholder="f1-lamp.local or 192.168.1.xxx">
+            <button id="directConnectBtn">Connect</button>
           </div>
         </div>
       </aside>
@@ -141,7 +141,7 @@
 
     <footer>
       <span>F1 LAMP CONTROLLER · WS2812B 19 PIXELS</span>
-      <span id="footerStatus">Cloudflare Pages + Workers Online</span>
+      <span id="footerStatus">Cloudflare Pages + Workers Active</span>
     </footer>
   </main>
 

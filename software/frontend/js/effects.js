@@ -20,16 +20,16 @@ export const pulse = (t, c, p, w) => {
 };
 
 export const modes = [
-  { id: "static",    label: "ไฟค้าง",       name: "STATIC GLOW" },
-  { id: "rev",       label: "เร่งเครื่อง",   name: "ENGINE REV" },
-  { id: "chase",     label: "ดาวหาง",       name: "COMET TRAIL" },
-  { id: "breathe",   label: "หายใจ",        name: "SOFT BREATH" },
-  { id: "wave",      label: "คลื่นแสง",     name: "RED WAVE" },
-  { id: "scanner",   label: "สแกนไปกลับ",   name: "SCANNER" },
-  { id: "ripple",    label: "แผ่ออกจากกลาง", name: "CENTER RIPPLE" },
-  { id: "heartbeat", label: "หัวใจเต้น",    name: "HEARTBEAT" },
-  { id: "ember",     label: "ประกายไฟ",     name: "EMBER GLOW" },
-  { id: "cascade",   label: "ไหลสลับโซน",   name: "ZONE CASCADE" }
+  { id: "static",    label: "Static Glow",   name: "STATIC GLOW" },
+  { id: "rev",       label: "Engine Rev",    name: "ENGINE REV" },
+  { id: "chase",     label: "Comet Trail",   name: "COMET TRAIL" },
+  { id: "breathe",   label: "Soft Breath",   name: "SOFT BREATH" },
+  { id: "wave",      label: "Red Wave",      name: "RED WAVE" },
+  { id: "scanner",   label: "Scanner",       name: "SCANNER" },
+  { id: "ripple",    label: "Center Ripple", name: "CENTER RIPPLE" },
+  { id: "heartbeat", label: "Heartbeat",     name: "HEARTBEAT" },
+  { id: "ember",     label: "Ember Glow",    name: "EMBER GLOW" },
+  { id: "cascade",   label: "Zone Cascade",  name: "ZONE CASCADE" }
 ];
 
 export function level(effect, t, i, j, n) {
