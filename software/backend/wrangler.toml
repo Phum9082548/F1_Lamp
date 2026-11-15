@@ -1,7 +1,16 @@
 name = "f1-lamp-relay"
+account_id = "eec51296b369bda8cfb484f9747fa43e"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "LAMP_RELAY"
+class_name = "LampRelay"
+
+[[migrations]]
+tag = "v1-lamp-relay"
+new_sqlite_classes = ["LampRelay"]
 
 [vars]
 ENVIRONMENT = "production"

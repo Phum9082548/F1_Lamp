@@ -1,145 +1,142 @@
-# F1 Lamp · Real 3D + Wi-Fi & Cloud Relay Control
+# F1 Lamp — ESP8266 and Cloudflare Control
 
-[![Cloudflare Pages](https://img.shields.io/badge/Frontend-Cloudflare%20Pages-orange)](https://f1-lamp.pages.dev)
-[![Cloudflare Workers](https://img.shields.io/badge/Backend-Cloudflare%20Workers-f38020)](https://f1-lamp-relay.f1-lamp-control.workers.dev)
-[![ESP8266](https://img.shields.io/badge/Hardware-ESP8266%20NodeMCU-blue)](https://www.espressif.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE-three.txt)
+**Last updated: 2026-11-16 01:17 ICT (UTC+07:00)**
+**UTC timestamp: 2026-11-15T18:17:40Z**
 
-Formula 1 (F1) LED logo lamp powered by an **ESP8266** microcontroller. Features dual-mode control: **Local LAN via mDNS (`f1-lamp.local`)** and **Remote Internet Control via Cloudflare Workers WebSocket Relay + MongoDB Atlas**. Includes an interactive **3D WebGL simulator (Three.js)** using original 3MF mesh geometry (23,506 triangles).
+An ESP8266 F1 logo lamp with three independent WS2812B strips, ten red lighting effects, local Wi-Fi control, remote Cloudflare control, and a browser-based 3D simulator.
 
-Live Web App: [https://f1-lamp.pages.dev](https://f1-lamp.pages.dev)  
-Live Cloud Relay: [https://f1-lamp-relay.f1-lamp-control.workers.dev](https://f1-lamp-relay.f1-lamp-control.workers.dev)
+- [Live controller](https://f1-lamp.pages.dev)
+- [Cloud relay status](https://f1-lamp-relay.f1-lamp-control.workers.dev/api/state)
+- Local controller: `http://f1-lamp.local/` or the board's IP address.
 
----
+## Latest repair
 
-## Key Features
+The relay now routes device WebSockets and HTTP commands through one named **Cloudflare Durable Object**. Previously, the socket was stored in a Worker module variable: requests handled by another instance could report success without delivering the command.
 
-- **Strict Architecture Separation:** Clean decoupling between embedded C++ firmware (`hardware/`) and modern web/serverless cloud applications (`software/`).
-- **Global Serverless Hosting:** Frontend deployed on Cloudflare Pages with zero cold-starts and worldwide edge distribution.
-- **Outbound TLS Cloud Relay:** Outbound WSS connection (port 443) from ESP8266 to Cloudflare Workers with verified Root CA certificate. No router port forwarding or public IP exposure required.
-- **Zero-Config Local Discovery (mDNS):** Broadcasts as `http://f1-lamp.local` for instant local browser access without static IP configuration.
-- **Real-Time 3D Simulation:** WebGL rendering with real vertices and normals from `F1_Logo_Led_Lamp.3mf`. Supports camera orbit, zoom, auto-rotation, exploded component view, and custom diffuser GLSL shader.
-- **Persistent State & Presets:** Ready for MongoDB Atlas integration to persist lamp state and user presets across reboots.
-- **Minimalist Telemetry UI:** Clean, dark-mode responsive interface with zero emojis, high-contrast controls, and one-click quick presets.
+The repair persists command revisions and the latest pending command, retries unacknowledged commands on device sync and reconnect, and retains socket metadata across hibernation. A command remains `pending` until the ESP8266 echoes its revision in `ack`. The controller displays an acknowledgment wait message instead of immediately claiming success.
 
----
+**Production verification, 2026-11-16 ICT:** cloud OFF and ON commands both matched the board's reported state and acknowledgment revision. The controller loaded with the lamp online. This verifies command delivery and firmware state; actual LED illumination also depends on wiring and power.
 
-## Directory Structure
+## Project layout
 
 ```text
-F1_Lamp/
-├── hardware/                    # Embedded Firmware (ESP8266 C++)
-│   ├── README.md                # Wiring guide and hardware specifications
-│   └── F1_Lamp/
-│       ├── F1_Lamp.ino          # Primary Arduino sketch (modular, commented)
-│       ├── effects.h            # 10 LED lighting effect math algorithms
-│       ├── cloud.h              # Outbound TLS WebSocket client for Cloudflare
-│       ├── config.example.h     # Wi-Fi & OTA credentials template
-│       ├── relay_ca.h           # Root CA certificate (TLS X.509)
-│       └── web_assets.h         # Offline fallback Gzip web bundle in Flash
-│
-├── software/                    # Web & Cloud Applications
-│   ├── frontend/                # [Cloudflare Pages] Web App + 3D Simulator
-│   │   ├── index.html           # Minimalist HTML5 interface (English, zero emojis)
-│   │   ├── css/style.css        # F1 Telemetry dark theme styling
-│   │   └── js/
-│   │       ├── app.js           # UI state machine, network sync, mDNS scanner
-│   │       ├── effects.js       # Effect formulas matching hardware 1:1
-│   │       ├── viewer.js        # Three.js 3D model loader and shader uniforms
-│   │       └── model.json       # Extracted 3MF mesh geometry (23,506 triangles)
-│   │
-│   └── backend/                 # [Cloudflare Workers + MongoDB]
-│       ├── wrangler.toml        # Cloudflare Workers configuration
-│       ├── package.json         # Worker dependencies & scripts
-│       ├── tsconfig.json        # TypeScript configuration
-│       └── src/
-│           ├── index.ts         # WebSocket Relay (/api/device/ws) & REST API
-│           └── mongodb.ts       # MongoDB Atlas Data API integration
-│
-├── .gitignore                   # Protects private keys, config.h, node_modules
-├── README.md                    # Project documentation
-└── วิธีใช้.txt                  # Quick start guide (Thai)
+hardware/F1_Lamp/       Arduino firmware and bundled local web assets
+software/backend/      Cloudflare Worker and Durable Object relay
+software/frontend/     Static Pages controller and 3D viewer
+tests/                 Local relay integration test
 ```
 
----
+Use `hardware/F1_Lamp/` for firmware development. The firmware files at the repository root are legacy copies; do not mix the two sets.
 
-## Hardware Specifications & Pinout
+## Hardware and wiring
 
-- **Microcontroller:** ESP8266 (NodeMCU 1.0 / ESP-12E), 4MB Flash (Layout: FS 2MB / OTA ~1019KB).
-- **LED Strips:** WS2812B Addressable Red LEDs (19 total LEDs across 3 distinct channels):
-  - **Channel 0 (D1 / GPIO 5):** 4 LEDs (Front logo accent)
-  - **Channel 1 (D2 / GPIO 4):** 6 LEDs (Center stripe)
-  - **Channel 2 (D5 / GPIO 14):** 9 LEDs (Bottom base plate)
-- **Power Supply:** Regulated 5V DC (minimum 2A recommended) with shared common ground between the board and LED strips.
+Target: **ESP8266 NodeMCU 1.0 (ESP-12E Module), 4 MB flash**.
 
----
+| Channel | Board pin | GPIO | LED count |
+| --- | --- | --- | --- |
+| Front accent | D1 | 5 | 4 |
+| Center stripe | D2 | 4 | 6 |
+| Base plate | D5 | 14 | 9 |
 
-## Lighting Effects (10 Modes)
+The firmware expects 19 WS2812B addressable LEDs, GRB order, 800 kHz signaling, and renders red only. Connect signals to each strip's **DIN**. Use regulated **5 V, at least 2 A recommended**, with common ground between the board, strips, and supply. Do not power strips from 3V3.
 
-All mode, channel, brightness, and power transitions use a 700ms quintic smootherstep crossfade:
+There is no complete power/level-shifter schematic in this repository. Confirm board power connections before combining external power and USB. Confirm the actual board, LED type, counts, and pin mapping before flashing another assembly. Channels larger than nine LEDs also require changes to the firmware's effect buffers.
 
-| ID | Name | Description |
-| :--- | :--- | :--- |
-| `rev` | **Engine Rev** | Engine acceleration curve. D2 and D5 ignite simultaneously; D1 follows with a 3-step delay. |
-| `static` | **Static Glow** | Continuous solid illumination at chosen brightness. |
-| `chase` | **Comet Trail** | Fast-moving comet trail looping smoothly across the strip. |
-| `breathe` | **Soft Breath** | Gentle sinusoidal pulsation for ambient lighting. |
-| `wave` | **Red Wave** | Harmonic traveling light wave moving across all three channels. |
-| `scanner` | **Scanner** | Knight Rider-style back-and-forth beam oscillation. |
-| `ripple` | **Center Ripple** | Expansion wave propagating outward from center to edges. |
-| `heartbeat` | **Heartbeat** | Dual-rhythmic arterial pulse simulation. |
-| `ember` | **Ember Glow** | Multi-frequency harmonic flicker resembling glowing exhaust coals. |
-| `cascade` | **Zone Cascade** | Sequential cascading phase shift cycling through channels D1, D2, and D5. |
+## Flash with Arduino IDE
 
----
+1. Clone or download this repository.
+2. Add the following URL in Preferences → Additional Boards Manager URLs:
 
-## Getting Started
+   ```text
+   https://arduino.esp8266.com/stable/package_esp8266com_index.json
+   ```
 
-### 1. Hardware Firmware (Arduino IDE)
+3. Install **esp8266 by ESP8266 Community** using Boards Manager.
+4. Install **Adafruit NeoPixel**, **ArduinoJson version 7**, and **WebSockets by Markus Sattler** using Library Manager.
+5. Copy `hardware/F1_Lamp/config.example.h` to `hardware/F1_Lamp/config.h`:
 
-1. Open Arduino IDE and install the following libraries via Library Manager:
-   - `Adafruit NeoPixel`
-   - `ArduinoJson` (v7)
-   - `WebSockets by Markus Sattler`
-2. Copy `hardware/F1_Lamp/config.example.h` to `hardware/F1_Lamp/config.h` and configure your local 2.4 GHz Wi-Fi SSID, password, and OTA secret.
-3. Open `hardware/F1_Lamp/F1_Lamp.ino`.
-4. Select board: **NodeMCU 1.0 (ESP-12E)** -> Flash Size: **4MB (FS: 2MB / OTA: ~1019KB)**.
-5. Connect USB cable and click **Upload**.
+   ```cpp
+   #pragma once
+   #define WIFI_SSID "YOUR_2_4_GHZ_WIFI"
+   #define WIFI_PASS "YOUR_WIFI_PASSWORD"
+   #define OTA_PASS  "YOUR_OTA_PASSWORD"
+   ```
 
-### 2. Software Deployment (Cloudflare)
+6. Open **hardware/F1_Lamp/F1_Lamp.ino**. Keep `config.h`, `effects.h`, `cloud.h`, `relay_ca.h`, and `web_assets.h` in that same folder.
+7. Select **NodeMCU 1.0 (ESP-12E Module)**, **4MB (FS:2MB OTA:~1019KB)**, and the board's USB port. Start with upload speed 115200 and board defaults for other options.
+8. Click Verify, then Upload. The first installation uses USB; later updates can use ArduinoOTA with `OTA_PASS`.
+9. Open Serial Monitor at **115200 baud**, read the Wi-Fi IP, and open it from the same network.
 
-#### Deploy Backend (Workers)
+Verified build: **ESP8266 core 3.1.2**, **NeoPixel 1.15.4**, **ArduinoJson 7.4.3**, **WebSockets 2.6.1**. Wi-Fi, HTTP server, mDNS, ArduinoOTA, and LittleFS are provided by the ESP8266 core.
+
+Header files compile into one firmware image automatically. **No separate LittleFS/SPIFFS asset upload is required** because `web_assets.h` embeds the fallback website. The firmware uses configured 2.4 GHz Wi-Fi credentials and has no Wi-Fi setup hotspot. Never commit `config.h` or credentials.
+
+## Deploy the cloud
+
+### Backend
+
 ```bash
 cd software/backend
-npm install
+npx wrangler login
 npx wrangler deploy
 ```
 
-*(Optional) Configure MongoDB Atlas Data API credentials:*
+`wrangler.toml` selects the existing account and binds `LAMP_RELAY` to `LampRelay`. Retain its SQLite migration. For a fork, replace `account_id` with an account you can deploy to.
+
+`SERVICE_SECRET` and `DEVICE_KEY` must match the board's pairing. Checked-in values are public development defaults; use private values for a private installation and keep replacements out of public Git history.
+
+### Frontend
+
+Set `WORKER_ORIGIN` in `software/frontend/js/app.js` to the intended Worker origin. From the repository root:
+
 ```bash
-npx wrangler secret put MONGODB_DATA_API_KEY
-npx wrangler secret put MONGODB_DATA_API_URL
+npx wrangler pages deploy software/frontend --project-name f1-lamp --branch main
 ```
 
-#### Deploy Frontend (Pages)
+For multiple Cloudflare accounts, set `CLOUDFLARE_ACCOUNT_ID` to the intended account for Pages deployment. The frontend requires no build command. For Git-based Pages deployment, use root `software/frontend` and output directory `.`.
+
+### Pair an existing board
+
+Defaults are in `hardware/F1_Lamp/cloud.h`, but a saved LittleFS `/cloud.json` overrides them even after firmware updates.
+
+Request a pairing code with **POST /api/pair-code** on the intended Worker. Submit the returned `code` as a form field to **POST http://<board-ip>/api/cloud/setup**. This saves the new pairing and reconnects without reflashing. Treat the pairing code as a credential.
+
+The board needs outbound WSS on port 443 and NTP time synchronization for TLS certificate validation. No router port forwarding is required.
+
+## Verify command delivery
+
+1. Check the board's `/api/cloud/status` for the intended host and `connected: true`.
+2. Check the cloud `/api/state` for `online: true`.
+3. Send an ON or OFF command from the controller.
+4. Confirm the board's `/api/state` changes accordingly.
+5. Confirm cloud `pending: false` and that `ack` matches the command `revision`.
+
+An online connection alone does not confirm a command was applied. Reload an already open controller with **Ctrl+Shift+R** after updates.
+
+## Local integration test
+
+Start the local relay in one terminal:
+
 ```bash
-cd ../frontend
-npx wrangler pages deploy . --project-name f1-lamp
+cd software/backend
+npx wrangler dev --ip 127.0.0.1 --port 8787
 ```
 
----
+From the repository root in another terminal:
 
-## Control & Operations
+```bash
+python -m pip install -r tests/requirements.txt
+python tests/test_relay.py
+```
 
-1. **Remote Internet Control (Anywhere via 4G/5G/Wi-Fi):**
-   - Access the web interface: **[https://f1-lamp.pages.dev](https://f1-lamp.pages.dev)**
-   - Add to mobile Home Screen for a fullscreen Progressive Web App experience.
-2. **Local LAN Control (No Internet Required):**
-   - In home network, navigate to: **`http://f1-lamp.local/`** or use the "Scan Local Network" button on the web app.
+The simulated device checks command delivery, acknowledgment, offline queuing, reconnect replay, and increasing revisions against the local Worker. It does not change the production lamp.
 
----
+## Effects and storage
 
-## License
+Effects: Engine Rev, Static Glow, Comet Trail, Soft Breath, Red Wave, Scanner, Center Ripple, Heartbeat, Ember Glow, and Zone Cascade. Firmware transitions crossfade over 700 ms.
 
-- 3D Geometry: Derived from `F1_Logo_Led_Lamp.3mf`.
-- Vendored Libraries: Three.js (MIT), Adafruit NeoPixel (LGPL), ArduinoJson (MIT), WebSockets (LGPL).
+The Durable Object coordinates active state and pending commands. `mongodb.ts` retains a legacy optional preset integration; it is not required for device command delivery. Presets use a non-durable in-memory fallback when no external store is configured.
+
+## Credits
+
+The viewer uses Three.js and geometry derived from `F1_Logo_Led_Lamp.3mf`. Firmware dependencies include Adafruit NeoPixel, ArduinoJson, and arduinoWebSockets. Third-party components retain their upstream licenses; see `LICENSE-three.txt` and the respective projects.

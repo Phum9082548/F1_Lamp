@@ -330,7 +330,7 @@ async function checkStatus() {
 
     if (connected) {
       setBadge('Connected', 'connected');
-      setBanner(isLocal ? 'Direct Local LAN connection active' : 'Lamp online · Synchronized via Cloudflare Relay');
+      setBanner(isLocal ? 'Direct Local LAN connection active' : v.pending ? 'Waiting for lamp acknowledgment...' : 'Lamp online · Synchronized via Cloudflare Relay');
     } else {
       setBadge('Offline', 'offline');
       setBanner('Lamp is currently offline · 3D simulation mode active');
@@ -367,7 +367,7 @@ async function sendStateToServer() {
       applyRemoteState(v);
       connected = isLocal || !!v.online;
       setBadge(connected ? 'Connected' : 'Cloud Saved (Lamp Offline)', connected ? 'connected' : 'offline');
-      setBanner(connected ? 'Command confirmed by lamp' : 'Saved to Cloud Relay (Waiting for ESP8266 firmware upload)');
+      setBanner(connected ? (v.pending ? 'Command sent · Waiting for lamp acknowledgment...' : 'Command confirmed by lamp') : 'Saved to Cloud Relay · Waiting for lamp to reconnect');
     }
   } catch (err) {
     setBanner('Network error · Could not deliver command');
