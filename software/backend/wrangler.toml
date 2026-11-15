@@ -1,0 +1,18 @@
+name = "f1-lamp-relay"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+# MongoDB Atlas Database name
+MONGODB_DATABASE = "f1_lamp"
+# Service authorization secret for ESP8266 handshake
+SERVICE_SECRET = "f1_secret_service_auth_token_xyz"
+# Device authorization key
+DEVICE_KEY = "f1_secure_device_secret_key_1234567890"
+
+# Note: Set your MongoDB Atlas Data API Key & URL via wrangler secret:
+# wrangler secret put MONGODB_DATA_API_KEY
+# wrangler secret put MONGODB_DATA_API_URL
+

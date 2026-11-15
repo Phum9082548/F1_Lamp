@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>F1 Lamp · Pit Control</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark">F1</div>
+      <div>
+        <strong>PIT CONTROL</strong>
+        <small>LIGHTING EXPERIENCE</small>
+      </div>
+    </div>
+    <div class="badge">โหมดจำลอง</div>
+  </header>
+
+  <main>
+    <div class="heading">
+      <div>
+        <div class="eyebrow">YOUR GARAGE. YOUR LIGHT.</div>
+        <h1>SET THE MOOD.</h1>
+        <p>เปลี่ยนทุกมุมห้องให้เป็นกริดสตาร์ทของคุณ</p>
+      </div>
+      <button class="power" id="power" aria-pressed="true">⏻ &nbsp; เปิดอยู่</button>
+    </div>
+
+    <div class="layout">
+      <!-- Left Column: 3D Simulator & Zones -->
+      <section>
+        <div class="preview">
+          <div class="preview-top">
+            <span>REAL MODEL / 3D VIEW</span>
+            <span class="live">● 3MF MESH</span>
+          </div>
+          <div id="viewer" aria-label="โมเดลโคม F1 แบบ 3D หมุนและซูมได้">
+            <div id="modelStatus" role="status">กำลังโหลดโมเดลจริงจาก 3MF…</div>
+          </div>
+          <div class="view-tools">
+            <button id="resetView">↺ มุมเริ่มต้น</button>
+            <button id="autoRotate" aria-pressed="false">⟳ หมุนอัตโนมัติ</button>
+            <button id="explode" aria-pressed="false">◇ แยกชิ้นส่วน</button>
+          </div>
+          <div class="gesture-hint">ลากเพื่อหมุน · เลื่อน / สองนิ้วเพื่อซูม</div>
+          <div class="preview-bottom">
+            <div>
+              <div class="micro">ACTIVE EFFECT</div>
+              <div class="big" id="effectName">STATIC GLOW</div>
+            </div>
+            <div style="text-align:right">
+              <div class="micro">LED OUTPUT</div>
+              <div class="big">
+                <span id="out">19</span><span style="font-size:16px;color:#888"> / 19</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="zones" id="zones"></div>
+        <p class="hint">
+          ใช้เมชจริงครบ 8 ชิ้นจาก F1_Logo_Led_Lamp.3mf · 23,506 สามเหลี่ยม<br>
+          จัดชิ้นส่วนจากถาดพิมพ์เป็นโคมเพื่อแสดงผล ตำแหน่ง LED ในโมเดลเป็นภาพประกอบ
+        </p>
+      </section>
+
+      <!-- Right Column: Control Cards -->
+      <aside>
+        <!-- Card 1: Connection & Wi-Fi -->
+        <div class="card connection">
+          <div class="card-title">
+            <h2>ควบคุมโคม</h2>
+            <span class="num">Wi-Fi</span>
+          </div>
+          <p id="connectionHelp">ควบคุมได้ทั้งผ่าน Wi-Fi ในบ้าน และผ่าน Cloud Relay จากนอกบ้าน</p>
+          <label for="deviceIp" class="micro">ESP8266 IP ADDRESS</label>
+          <div class="ip-row">
+            <input id="deviceIp" value="192.168.1.104" inputmode="decimal" aria-label="IP ของบอร์ด">
+            <button id="openDevice">เปิดโคม ↗</button>
+          </div>
+          <div id="deviceStatus" role="status">โหมดจำลอง · ยังไม่ได้เชื่อมต่อ</div>
+          <button id="retryDevice" class="secondary">ตรวจสอบการเชื่อมต่อ</button>
+        </div>
+
+        <!-- Card 2: Brightness -->
+        <div class="card">
+          <div class="card-title">
+            <h2>ความสว่าง</h2>
+            <span class="num">01</span>
+          </div>
+          <p class="red-only"><i></i> SIGNATURE RED <span>แสงแดงประจำโคม</span></p>
+          <label class="range-label" for="brightness">
+            <span>ความสว่าง</span>
+            <span id="brightnessVal">40%</span>
+          </label>
+          <input type="range" id="brightness" min="0" max="100" value="40">
+        </div>
+
+        <!-- Card 3: Effects -->
+        <div class="card">
+          <div class="card-title">
+            <h2>เลือกเอฟเฟกต์</h2>
+            <span class="num">02</span>
+          </div>
+          <div class="effects" id="effects"></div>
+          <label class="range-label" for="speed">
+            <span>ความเร็วเอฟเฟกต์</span>
+            <span id="speedVal">1.00×</span>
+          </label>
+          <input type="range" id="speed" min="25" max="250" value="100">
+          <button class="play" id="replay">↻ &nbsp; เล่นเอฟเฟกต์อีกครั้ง</button>
+        </div>
+
+        <div class="hint">
+          10 โหมดแสงแดง · เฟดเข้าและเปลี่ยนโหมดนุ่มนวล 700ms<br>
+          ENGINE REV: D2 และ D5 เริ่มพร้อมกัน ส่วน D1 ตามหลัง
+        </div>
+      </aside>
+    </div>
+
+    <footer class="note">
+      <span>F1 LAMP / ESP8266 &nbsp; · &nbsp; 3 CHANNELS &nbsp; · &nbsp; 19 PIXELS</span>
+      <span id="status" role="status">พร้อมทดลอง · การตั้งค่าบันทึกในเบราว์เซอร์นี้</span>
+    </footer>
+  </main>
+
+  <script type="module">
+    import './js/app.js';
+    import { initViewer } from './js/viewer.js';
+    initViewer();
+  </script>
+</body>
+</html>
+

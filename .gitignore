@@ -1,0 +1,13 @@
+# Private Hardware Credentials (Wi-Fi & OTA passwords)
+config.h
+hardware/F1_Lamp/config.h
+
+# Node & Build artifacts
+node_modules/
+.wrangler/
+dist/
+.DS_Store
+
+# Local Environment
+.env
+.env.local
