@@ -385,35 +385,38 @@ async function sendStateToServer() {
 const scanBtn = $('#scanMdns');
 if (scanBtn) {
   scanBtn.onclick = async () => {
+    // If user is on remote HTTPS (e.g. 4G/5G), inform them they are using Cloud Relay
+    if (!isLocal) {
+      setBanner('mDNS is only for home Wi-Fi. On 4G/5G, commands route via Cloud Relay.');
+      return;
+    }
+
     scanBtn.disabled = true;
     scanBtn.textContent = 'Scanning for f1-lamp.local...';
-    setBanner('Searching for local hardware via mDNS (f1-lamp.local)...');
+    setBanner('Searching for local hardware via mDNS...');
 
     try {
       const localUrl = 'http://f1-lamp.local';
       const img = new Image();
-      let detected = false;
 
       const timer = setTimeout(() => {
-        if (!detected) {
-          scanBtn.disabled = false;
-          scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
-          setBanner('If on the same Wi-Fi, open http://f1-lamp.local directly.');
-          if (confirm('Open direct local control page at http://f1-lamp.local?')) {
-            window.open(localUrl, '_blank', 'noopener');
-          }
-        }
-      }, 2500);
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
+        setBanner('Local lamp not responding. Ensure ESP8266 is powered on.');
+      }, 3000);
 
-      img.onload = img.onerror = () => {
-        detected = true;
+      img.onload = () => {
         clearTimeout(timer);
         scanBtn.disabled = false;
         scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
-        setBanner('F1 Lamp discovered at f1-lamp.local!');
-        if (confirm('F1 Lamp discovered! Open direct control at http://f1-lamp.local?')) {
-          window.open(localUrl, '_blank', 'noopener');
-        }
+        setBanner('F1 Lamp found at f1-lamp.local');
+      };
+
+      img.onerror = () => {
+        clearTimeout(timer);
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan Local Network (f1-lamp.local)';
+        setBanner('Cannot reach f1-lamp.local. Check home Wi-Fi connection.');
       };
 
       img.src = `${localUrl}/api/state?_=${Date.now()}`;
