@@ -15,122 +15,133 @@
   </script>
 </head>
 <body>
+  <!-- Header -->
   <header>
     <div class="brand">
-      <div class="mark">F1</div>
-      <div>
-        <strong>PIT CONTROL</strong>
-        <small>LIGHTING EXPERIENCE</small>
-      </div>
+      <div class="brand-badge">F1</div>
+      <div class="brand-title">PIT CONTROL</div>
     </div>
-    <div class="badge">โหมดจำลอง</div>
+    <div class="status-badge" id="connBadge">โหมดจำลอง</div>
   </header>
 
   <main>
-    <div class="heading">
-      <div>
-        <div class="eyebrow">YOUR GARAGE. YOUR LIGHT.</div>
-        <h1>SET THE MOOD.</h1>
-        <p>เปลี่ยนทุกมุมห้องให้เป็นกริดสตาร์ทของคุณ</p>
-      </div>
-      <button class="power" id="power" aria-pressed="true">⏻ &nbsp; เปิดอยู่</button>
+    <!-- Quick Action Bar -->
+    <div class="quick-bar">
+      <button class="power-btn" id="power" aria-pressed="true">เปิดไฟอยู่</button>
+      <button class="scan-btn" id="scanMdns">สแกนหาโคมไฟในวง Wi-Fi (f1-lamp.local)</button>
     </div>
 
-    <div class="layout">
-      <!-- Left Column: 3D Simulator & Zones -->
+    <!-- Status Banner -->
+    <div class="status-banner" id="statusBanner">
+      <span id="bannerText">พร้อมใช้งาน · กำลังเชื่อมต่อผ่านระบบ Cloud Relay</span>
+      <span id="pingText" style="font-size:11px; color:#8c8f96;"></span>
+    </div>
+
+    <div class="grid">
+      <!-- Left: 3D Preview & Zones -->
       <section>
-        <div class="preview">
-          <div class="preview-top">
-            <span>REAL MODEL / 3D VIEW</span>
-            <span class="live">● 3MF MESH</span>
+        <div class="preview-panel">
+          <div class="preview-header">
+            <span>3D SIMULATOR</span>
+            <span>23,506 TRIANGLES</span>
           </div>
-          <div id="viewer" aria-label="โมเดลโคม F1 แบบ 3D หมุนและซูมได้">
-            <div id="modelStatus" role="status">กำลังโหลดโมเดลจริงจาก 3MF…</div>
+
+          <div id="viewer" aria-label="โมเดล 3D โคม F1">
+            <div id="modelStatus" role="status">กำลังโหลดโมเดล 3D...</div>
           </div>
+
           <div class="view-tools">
-            <button id="resetView">↺ มุมเริ่มต้น</button>
-            <button id="autoRotate" aria-pressed="false">⟳ หมุนอัตโนมัติ</button>
-            <button id="explode" aria-pressed="false">◇ แยกชิ้นส่วน</button>
+            <button class="tool-btn" id="resetView">รีเซ็ตมุมกล้อง</button>
+            <button class="tool-btn" id="autoRotate" aria-pressed="false">หมุนอัตโนมัติ</button>
+            <button class="tool-btn" id="explode" aria-pressed="false">แยกชิ้นส่วน</button>
           </div>
-          <div class="gesture-hint">ลากเพื่อหมุน · เลื่อน / สองนิ้วเพื่อซูม</div>
-          <div class="preview-bottom">
+
+          <div class="preview-footer">
             <div>
-              <div class="micro">ACTIVE EFFECT</div>
-              <div class="big" id="effectName">STATIC GLOW</div>
+              <div class="preview-label">ACTIVE EFFECT</div>
+              <div class="preview-val" id="effectName">STATIC GLOW</div>
             </div>
-            <div style="text-align:right">
-              <div class="micro">LED OUTPUT</div>
-              <div class="big">
-                <span id="out">19</span><span style="font-size:16px;color:#888"> / 19</span>
+            <div style="text-align: right;">
+              <div class="preview-label">LED OUTPUT</div>
+              <div class="preview-val">
+                <span id="out">19</span><span style="font-size: 15px; color: #777;"> / 19</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="zones" id="zones"></div>
-        <p class="hint">
-          ใช้เมชจริงครบ 8 ชิ้นจาก F1_Logo_Led_Lamp.3mf · 23,506 สามเหลี่ยม<br>
-          จัดชิ้นส่วนจากถาดพิมพ์เป็นโคมเพื่อแสดงผล ตำแหน่ง LED ในโมเดลเป็นภาพประกอบ
-        </p>
+        <!-- Zones Control -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-title">
+            <h2>เปิด-ปิด แยกโซนไฟ</h2>
+            <span class="card-tag">ZONES</span>
+          </div>
+          <div class="zones-grid" id="zones"></div>
+        </div>
       </section>
 
-      <!-- Right Column: Control Cards -->
+      <!-- Right: Main Controls -->
       <aside>
-        <!-- Card 1: Connection & Wi-Fi -->
-        <div class="card connection">
-          <div class="card-title">
-            <h2>ควบคุมโคม</h2>
-            <span class="num">Wi-Fi</span>
-          </div>
-          <p id="connectionHelp">ควบคุมได้ทั้งผ่าน Wi-Fi ในบ้าน และผ่าน Cloud Relay จากนอกบ้าน</p>
-          <label for="deviceIp" class="micro">ESP8266 IP ADDRESS</label>
-          <div class="ip-row">
-            <input id="deviceIp" value="192.168.1.104" inputmode="decimal" aria-label="IP ของบอร์ด">
-            <button id="openDevice">เปิดโคม ↗</button>
-          </div>
-          <div id="deviceStatus" role="status">โหมดจำลอง · ยังไม่ได้เชื่อมต่อ</div>
-          <button id="retryDevice" class="secondary">ตรวจสอบการเชื่อมต่อ</button>
-        </div>
-
-        <!-- Card 2: Brightness -->
+        <!-- Brightness Card -->
         <div class="card">
           <div class="card-title">
             <h2>ความสว่าง</h2>
-            <span class="num">01</span>
+            <span class="card-tag" id="brightnessVal">40%</span>
           </div>
-          <p class="red-only"><i></i> SIGNATURE RED <span>แสงแดงประจำโคม</span></p>
-          <label class="range-label" for="brightness">
-            <span>ความสว่าง</span>
-            <span id="brightnessVal">40%</span>
-          </label>
           <input type="range" id="brightness" min="0" max="100" value="40">
+          <div class="preset-pills">
+            <button class="pill-btn" data-set-bright="25">25%</button>
+            <button class="pill-btn" data-set-bright="50">50%</button>
+            <button class="pill-btn" data-set-bright="75">75%</button>
+            <button class="pill-btn" data-set-bright="100">100%</button>
+          </div>
         </div>
 
-        <!-- Card 3: Effects -->
+        <!-- Speed Card -->
         <div class="card">
           <div class="card-title">
-            <h2>เลือกเอฟเฟกต์</h2>
-            <span class="num">02</span>
+            <h2>ความเร็วเอฟเฟกต์</h2>
+            <span class="card-tag" id="speedVal">1.00x</span>
           </div>
-          <div class="effects" id="effects"></div>
-          <label class="range-label" for="speed">
-            <span>ความเร็วเอฟเฟกต์</span>
-            <span id="speedVal">1.00×</span>
-          </label>
           <input type="range" id="speed" min="25" max="250" value="100">
-          <button class="play" id="replay">↻ &nbsp; เล่นเอฟเฟกต์อีกครั้ง</button>
+          <div class="preset-pills">
+            <button class="pill-btn" data-set-speed="50">0.5x</button>
+            <button class="pill-btn" data-set-speed="100">1.0x</button>
+            <button class="pill-btn" data-set-speed="150">1.5x</button>
+            <button class="pill-btn" data-set-speed="200">2.0x</button>
+          </div>
         </div>
 
-        <div class="hint">
-          10 โหมดแสงแดง · เฟดเข้าและเปลี่ยนโหมดนุ่มนวล 700ms<br>
-          ENGINE REV: D2 และ D5 เริ่มพร้อมกัน ส่วน D1 ตามหลัง
+        <!-- Effects Grid Card -->
+        <div class="card">
+          <div class="card-title">
+            <h2>เลือกโหมดแสงไฟ</h2>
+            <span class="card-tag">EFFECTS</span>
+          </div>
+          <div class="effects-grid" id="effects"></div>
+          <button class="replay-btn" id="replay">เล่นเอฟเฟกต์นี้ซ้ำ</button>
+        </div>
+
+        <!-- Connection Settings Card -->
+        <div class="card">
+          <div class="card-title">
+            <h2>การเชื่อมต่อ</h2>
+            <span class="card-tag">NETWORK</span>
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+            เชื่อมต่อผ่าน Cloud Relay หรือใส่ที่อยู่ IP/ชื่อเครื่องในวง Wi-Fi
+          </p>
+          <div class="input-row">
+            <input type="text" id="hostInput" placeholder="f1-lamp.local หรือ 192.168.1.xxx">
+            <button id="directConnectBtn">เชื่อมต่อ</button>
+          </div>
         </div>
       </aside>
     </div>
 
-    <footer class="note">
-      <span>F1 LAMP / ESP8266 &nbsp; · &nbsp; 3 CHANNELS &nbsp; · &nbsp; 19 PIXELS</span>
-      <span id="status" role="status">พร้อมทดลอง · การตั้งค่าบันทึกในเบราว์เซอร์นี้</span>
+    <footer>
+      <span>F1 LAMP CONTROLLER · WS2812B 19 PIXELS</span>
+      <span id="footerStatus">Cloudflare Pages + Workers Online</span>
     </footer>
   </main>
 
@@ -141,4 +152,3 @@
   </script>
 </body>
 </html>
-

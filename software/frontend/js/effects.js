@@ -20,16 +20,16 @@ export const pulse = (t, c, p, w) => {
 };
 
 export const modes = [
-  { id: "static",    label: "ไฟค้าง",       name: "STATIC GLOW",   icon: "☀" },
-  { id: "rev",       label: "เร่งเครื่อง",   name: "ENGINE REV",    icon: "↗" },
-  { id: "chase",     label: "ดาวหาง",       name: "COMET TRAIL",   icon: "➜" },
-  { id: "breathe",   label: "หายใจ",        name: "SOFT BREATH",   icon: "◉" },
-  { id: "wave",      label: "คลื่นแสง",     name: "RED WAVE",      icon: "≈" },
-  { id: "scanner",   label: "สแกนไปกลับ",   name: "SCANNER",       icon: "↔" },
-  { id: "ripple",    label: "แผ่ออกจากกลาง", name: "CENTER RIPPLE", icon: "◎" },
-  { id: "heartbeat", label: "หัวใจเต้น",    name: "HEARTBEAT",     icon: "♡" },
-  { id: "ember",     label: "ประกายไฟ",     name: "EMBER GLOW",    icon: "✦" },
-  { id: "cascade",   label: "ไหลสลับโซน",   name: "ZONE CASCADE",  icon: "≋" }
+  { id: "static",    label: "ไฟค้าง",       name: "STATIC GLOW" },
+  { id: "rev",       label: "เร่งเครื่อง",   name: "ENGINE REV" },
+  { id: "chase",     label: "ดาวหาง",       name: "COMET TRAIL" },
+  { id: "breathe",   label: "หายใจ",        name: "SOFT BREATH" },
+  { id: "wave",      label: "คลื่นแสง",     name: "RED WAVE" },
+  { id: "scanner",   label: "สแกนไปกลับ",   name: "SCANNER" },
+  { id: "ripple",    label: "แผ่ออกจากกลาง", name: "CENTER RIPPLE" },
+  { id: "heartbeat", label: "หัวใจเต้น",    name: "HEARTBEAT" },
+  { id: "ember",     label: "ประกายไฟ",     name: "EMBER GLOW" },
+  { id: "cascade",   label: "ไหลสลับโซน",   name: "ZONE CASCADE" }
 ];
 
 export function level(effect, t, i, j, n) {

@@ -19,6 +19,7 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <Adafruit_NeoPixel.h>
 
@@ -275,10 +276,15 @@ void loop() {
   if (WiFi.status() == WL_CONNECTED) {
     if (!otaReady) {
       ArduinoOTA.begin();
+      if (MDNS.begin("f1-lamp")) {
+        MDNS.addService("http", "tcp", 80);
+        Serial.println("[mDNS] Responder started: http://f1-lamp.local");
+      }
       otaReady = true;
       Serial.print("[WiFi] Connected! IP: http://");
       Serial.println(WiFi.localIP());
     }
+    MDNS.update();
     ArduinoOTA.handle();
     server.handleClient();
     cloudLoop();
@@ -287,3 +293,4 @@ void loop() {
   renderLights();
   delay(1);
 }
+
