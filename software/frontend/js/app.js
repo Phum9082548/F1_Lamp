@@ -216,13 +216,11 @@ function edit(replay = false) {
   if (replay) phase = 0;
   syncUI();
 
-  if (connected) {
-    desiredVersion++;
-    replayPending ||= replay;
-    setBanner('Sending command to lamp...');
-    clearTimeout(sendTimer);
-    sendTimer = setTimeout(sendStateToServer, 80);
-  }
+  desiredVersion++;
+  replayPending ||= replay;
+  setBanner(connected ? 'Sending command to lamp...' : 'Saving setting to Cloud Relay...');
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(sendStateToServer, 80);
 }
 
 if ($('#power')) {
@@ -367,7 +365,9 @@ async function sendStateToServer() {
     appliedVersion = version;
     if (desiredVersion === version) {
       applyRemoteState(v);
-      setBanner('Command confirmed by relay');
+      connected = isLocal || !!v.online;
+      setBadge(connected ? 'Connected' : 'Cloud Saved (Lamp Offline)', connected ? 'connected' : 'offline');
+      setBanner(connected ? 'Command confirmed by lamp' : 'Saved to Cloud Relay (Waiting for ESP8266 firmware upload)');
     }
   } catch (err) {
     setBanner('Network error · Could not deliver command');

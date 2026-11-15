@@ -4,7 +4,7 @@
  * ============================================================================
  * Enables remote control over 4G/5G Internet without router port-forwarding.
  * - Pre-configured to connect automatically to your Cloudflare Worker Relay.
- * - Connects via outbound WSS (Port 443).
+ * - Connects via outbound WSS (Port 443) with verified Root CA (relay_ca.h).
  * - Synchronizes state bidirectionally with automatic revision tracking.
  */
 
@@ -14,6 +14,8 @@
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <time.h>
+#include "relay_ca.h"
 
 // Default Cloudflare Worker Relay credentials (matches wrangler.toml)
 static const char DEFAULT_CLOUD_HOST[]   = "f1-lamp-relay.f1-lamp-control.workers.dev";
@@ -21,6 +23,7 @@ static const char DEFAULT_CLOUD_SECRET[] = "f1_secret_service_auth_token_xyz";
 static const char DEFAULT_DEVICE_KEY[]   = "f1_secure_device_secret_key_1234567890";
 
 WebSocketsClient cloudSocket;
+BearSSL::X509List cloudCA(RELAY_CA);
 
 // Pre-populated so the lamp connects automatically on boot without manual pairing
 String cloudHost    = DEFAULT_CLOUD_HOST;
@@ -176,6 +179,9 @@ void cloudSetup(ESP8266WebServer& server) {
     f.close();
   }
 
+  // Sync system clock via NTP for TLS certificate verification
+  configTime(0, 0, "time.cloudflare.com", "pool.ntp.org", "time.google.com");
+
   // REST API: GET /api/cloud/status
   server.on("/api/cloud/status", HTTP_GET, [&server]() {
     server.sendHeader("Cache-Control", "no-store");
@@ -213,7 +219,7 @@ void cloudSetup(ESP8266WebServer& server) {
  * Handle WebSocket loop & periodic state reporting
  */
 void cloudLoop() {
-  if (updating || WiFi.status() != WL_CONNECTED || !cloudConfigured) {
+  if (updating || WiFi.status() != WL_CONNECTED || !cloudConfigured || time(nullptr) < 1700000000) {
     return;
   }
 
@@ -222,18 +228,18 @@ void cloudLoop() {
     cloudHeaders = "OAI-Sites-Authorization: Bearer " + cloudService + "\r\nX-Device-Key: " + cloudKey;
 
     Serial.printf("[Cloud] Connecting to wss://%s/api/device/ws ...\n", cloudHost.c_str());
-    cloudSocket.beginSSL(cloudHost.c_str(), 443, "/api/device/ws");
+    cloudSocket.beginSslWithCA(cloudHost.c_str(), 443, "/api/device/ws", &cloudCA, "arduino");
     cloudSocket.setExtraHeaders(cloudHeaders.c_str());
     cloudSocket.onEvent(cloudEvent);
-    cloudSocket.setReconnectInterval(5000);
+    cloudSocket.setReconnectInterval(10000);
     cloudSocket.enableHeartbeat(15000, 3000, 2);
     cloudStarted = true;
   }
 
   cloudSocket.loop();
 
-  // Periodic heartbeat / state sync every 2000ms when connected
-  if (cloudConnected && (cloudLastSync == 0 || millis() - cloudLastSync >= 2000)) {
+  // Periodic heartbeat / state sync every 1000ms when connected
+  if (cloudConnected && (cloudLastSync == 0 || millis() - cloudLastSync >= 1000)) {
     cloudLastSync = millis();
 
     JsonDocument msg, state;
